@@ -6,10 +6,13 @@ from sklearn.model_selection import train_test_split
 from dataclasses import dataclass
 import pandas as pd
 
+<<<<<<< HEAD
 from src.components.data_transformation import DataTransformation
 from src.components.data_transformation import DataTransformationConfig
 
 
+=======
+>>>>>>> 66e6f1154ac29fc8979ada33cf599ec0656515bd
 
 
 @dataclass
@@ -52,9 +55,14 @@ class DataIngestion:
 if __name__=="__main__":
 
     obj=DataIngestion()
+<<<<<<< HEAD
     train_data, test_data = obj.Initiate_Data_Ingestion()
   
     data_transformation=DataTransformation()
     train_arr,test_arr,_=data_transformation.Initiate_Data_Transformation(train_data,test_data)
 
     
+=======
+    obj.Initiate_Data_Ingestion()
+  
+>>>>>>> 66e6f1154ac29fc8979ada33cf599ec0656515bd
