@@ -1,163 +1,70 @@
-# BASIC IMPORTS
-import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-import os
-import sys
-from dataclasses import dataclass
-
-from catboost import CatBoostRegressor, CatBoostClassifier
-from sklearn.ensemble import (
-    AdaBoostRegressor, AdaBoostClassifier,
-    GradientBoostingRegressor, GradientBoostingClassifier,
-    RandomForestRegressor, RandomForestClassifier,
-)
-from sklearn.linear_model import LinearRegression, Ridge, Lasso, LogisticRegression
-from sklearn.neighbors import KNeighborsRegressor, KNeighborsClassifier
-from sklearn.svm import SVR, SVC
-from sklearn.naive_bayes import GaussianNB
-from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier
-from xgboost import XGBRegressor, XGBClassifier
-
-from src.exception import CustomException
+from src.components.data_ingestion import load_data, split_data
+from src.components.data_transformation import preprocess_data
 from src.logger import logging
-from src.utils import save_object, evaluate_models
-from src.components.data_ingestion import DataIngestionConfig, load_data
-
-# PREPROCESSING
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from sklearn.compose import ColumnTransformer
-from sklearn.impute import SimpleImputer
+import joblib
+from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import r2_score
 from sklearn.pipeline import Pipeline
 
-# MODEL SELECTION
-from sklearn.model_selection import train_test_split
-from sklearn.model_selection import RandomizedSearchCV
+def main():
+    # Load and split the data
+    file_path = "path/to/your/data.csv"
+    target_variable = "target_column"
+    test_size = 0.2
+    random_state = 42
 
-# METRICS
-from sklearn.metrics import (classification_report, accuracy_score, 
-                            r2_score, mean_absolute_error, mean_squared_error)
+    df = load_data(file_path)
+    X_train, X_test, y_train, y_test = split_data(df, target_variable, test_size, random_state)
 
-# WARNINGS
-import warnings
-warnings.filterwarnings('ignore')
+    # Preprocess the data
+    categorical_features = ["categorical_feature_1", "categorical_feature_2"]
+    strategy = "mean"
+    X_train, label_encoders, preprocessor = preprocess_data(X_train, categorical_features, strategy)
+    X_test = transform_data(X_test, label_encoders)
 
+    # Define regression models and their hyperparameters
+    regression_models = {
+        "Linear Regression": LinearRegression(),
+        "Lasso": Lasso(),
+        "Ridge": Ridge()
+    }
+    regression_params = {
+        "Linear Regression": {},
+        "Lasso": {"alpha": [0.1, 1.0, 10.0]},
+        "Ridge": {"alpha": [0.1, 1.0, 10.0]}
+    }
 
-@dataclass
-class ModelTrainerConfig:
-    trained_model_file_path: str = os.path.join("artifacts", "model.pkl")
+    # Train regression models
+    best_model, best_score = train_regression_models(X_train, y_train, X_test, y_test, regression_models, regression_params)
 
-class ModelTrainer:
-    def __init__(self):
-        self.model_trainer_config = ModelTrainerConfig()
+    logging.info(f"Best regression model: {best_model} with R2 score: {best_score}")
 
-    def initiate_model_training(self, train_array, test_array, task_type):
-        try:
-            logging.info("SPLITTING TRAIN AND TEST INPUT DATA")
-            X_train, y_train, X_test, y_test = (
-                train_array.iloc[:, :-1],
-                train_array.iloc[:, -1],
-                test_array.iloc[:, :-1],
-                test_array.iloc[:, -1],
-            )
+def train_regression_models(X_train, y_train, X_test, y_test, models, params):
+    best_model = None
+    best_score = -float('inf')
 
+    for model_name, model in models.items():
+        pipeline = Pipeline([
+            ('preprocessor', preprocessor),
+            ('model', model)
+        ])
 
-            if task_type == 'regression':
-                models = {
-                    "Random Forest": RandomForestRegressor(),
-                    "Decision Tree": DecisionTreeRegressor(),
-                    "Gradient Boosting": GradientBoostingRegressor(),
-                    "Linear Regression": LinearRegression(),
-                    "XGBRegressor": XGBRegressor(),
-                    "CatBoost Regressor": CatBoostRegressor(verbose=0),
-                    "AdaBoost Regressor": AdaBoostRegressor(),
-                    "SVR": SVR(),
-                    "K-Nearest Neighbors": KNeighborsRegressor(),
-                }
+        grid_search = GridSearchCV(pipeline, params[model_name], scoring='r2', cv=5)
+        grid_search.fit(X_train, y_train)
 
-                params = {
-                    "Random Forest": {"n_estimators": [50, 100, 200]},
-                    "Decision Tree": {"max_depth": [3, 5, 7]},
-                    "Gradient Boosting": {"n_estimators": [50, 100, 200], "learning_rate": [0.01, 0.1, 0.2]},
-                    "Linear Regression": {},
-                    "XGBRegressor": {"n_estimators": [50, 100, 200], "learning_rate": [0.01, 0.1, 0.2]},
-                    "CatBoost Regressor": {"iterations": [50, 100, 200], "learning_rate": [0.01, 0.1, 0.2]},
-                    "AdaBoost Regressor": {"n_estimators": [50, 100, 200], "learning_rate": [0.01, 0.1, 0.2]},
-                    "SVR": {"C": [0.1, 1, 10], "kernel": ["linear", "rbf"]},
-                    "K-Nearest Neighbors": {"n_neighbors": [3, 5, 7]},
-                }
+        y_pred = grid_search.predict(X_test)
+        score = r2_score(y_test, y_pred)
 
-                target_metric = "r2_score"
+        if score > best_score:
+            best_score = score
+            best_model = model_name
 
-            elif task_type == 'classification':
-                models = {
-                    "Logistic Regression": LogisticRegression(),
-                    "Decision Tree": DecisionTreeClassifier(),
-                    "Random Forest": RandomForestClassifier(),
-                    "SVM": SVC(),
-                    "K-Nearest Neighbors": KNeighborsClassifier(),
-                    "Gradient Boosting": GradientBoostingClassifier(),
-                    "AdaBoost": AdaBoostClassifier(),
-                    "XGBoost": XGBClassifier(),
-                    "CatBoost": CatBoostClassifier(verbose=0),
-                }
+    # Save the best model
+    joblib.dump(grid_search.best_estimator_, 'model.pkl')
+    joblib.dump(preprocessor, 'preprocessor.pkl')
 
-                params = {
-                    "Logistic Regression": {"solver": ["liblinear", "saga"], "C": [0.1, 1, 10]},
-                    "Decision Tree": {"criterion": ["gini", "entropy"], "max_depth": [3, 5, 7]},
-                    "Random Forest": {"n_estimators": [50, 100, 200], "max_features": ["auto", "sqrt"]},
-                    "SVM": {"C": [0.1, 1, 10], "kernel": ["linear", "rbf"]},
-                    "K-Nearest Neighbors": {"n_neighbors": [3, 5, 7], "weights": ["uniform", "distance"]},
-                    "Gradient Boosting": {"n_estimators": [50, 100, 200], "learning_rate": [0.01, 0.1, 0.2]},
-                    "AdaBoost": {"n_estimators": [50, 100, 200], "learning_rate": [0.01, 0.1, 0.2]},
-                    "XGBoost": {"n_estimators": [50, 100, 200], "learning_rate": [0.01, 0.1, 0.2]},
-                    "CatBoost": {"iterations": [50, 100, 200], "learning_rate": [0.01, 0.1, 0.2]},
-                }
+    return best_model, best_score
 
-                target_metric = "accuracy_score"
-
-            else:
-                raise ValueError("Invalid task type. Supported types are 'regression' and 'classification'.")
-
-            model_report = evaluate_models(X_train, y_train, X_test, y_test, models, params)
-
-            best_model_score = max(model_report.values())
-            best_model_name = list(model_report.keys())[list(model_report.values()).index(best_model_score)]
-            best_model = models[best_model_name]
-
-            logging.info(f"BEST MODEL: {best_model_name}, SCORE: {best_model_score}")
-
-            save_object(
-                file_path=self.model_trainer_config.trained_model_file_path,
-                obj=best_model
-            )
-
-            return best_model_score
-        
-        except Exception as e:
-            raise CustomException(e, sys)
-        
 if __name__ == "__main__":
-    config = DataIngestionConfig()
-
-    train_data_path = config.train_data_path
-    test_data_path = config.test_data_path
-
-    train_data, test_data = load_data(train_data_path, test_data_path)
-
-    print("Type of train_data:", type(train_data))
-    print("Shape of train_data:", train_data.shape)
-    print("Type of test_data:", type(test_data))
-    print("Shape of test_data:", test_data.shape)
-
-    if train_data is not None and test_data is not None:
-        print("Train data loaded successfully!")
-        print("Test data loaded successfully!")
-    else:
-        print("Failed to load train and test data.")
-
-    obj = ModelTrainer()
-    task_type = 'classification'  # or 'regression'
-    best_model_score = obj.initiate_model_training(train_data, test_data, task_type)
-    print(f"Best model score: {best_model_score}")
+    main()

@@ -1,71 +1,37 @@
-import os
-import sys
-from src.logger import logging
-from src.exception import CustomException
-from sklearn.model_selection import train_test_split
-from dataclasses import dataclass
 import pandas as pd
-from src.components.data_transformation import DataTransformation
+from sklearn.model_selection import train_test_split
+from src.logger import logging
+import os
 
-@dataclass
-class DataIngestionConfig:
-    train_data_path: str = os.path.join('artifacts', "train.csv")
-    test_data_path: str = os.path.join('artifacts', "test.csv")
-    raw_data_path: str = os.path.join('artifacts', "data.csv")
-
-def load_data(train_data_path, test_data_path):
+def load_data(file_path):
     try:
-        train_data = pd.read_csv(train_data_path)
-        test_data = pd.read_csv(test_data_path)
-        return train_data, test_data
-    except FileNotFoundError:
-        print("One or both of the files could not be found.")
-        return None, None
+        df = pd.read_csv(file_path)
+        logging.info(f"Read dataset as DataFrame from {file_path}.")
+        return df
+    except Exception as e:
+        logging.error(f"Error in loading data from {file_path}: {str(e)}")
+        raise
 
-class DataIngestion:
-    def __init__(self):
-        self.ingestion_config = DataIngestionConfig()
-
-    def initiate_data_ingestion(self):
-        logging.info("ENTERED DATA INGESTION METHOD")
-        try:
-            df = pd.read_csv("notebook/data/Obesity Estimation Cleaned.csv")
-            logging.info("READ DATASET AS DATAFRAME")
-
-            os.makedirs(os.path.dirname(self.ingestion_config.train_data_path), exist_ok=True)
-
-            df.to_csv(self.ingestion_config.raw_data_path, index=False, header=True)
-
-            logging.info("TRAIN TEST SPLIT INITIATED")
-            train_set, test_set = train_test_split(df, test_size=0.2, random_state=42)
-
-            train_set.to_csv(self.ingestion_config.train_data_path, index=False, header=True)
-            test_set.to_csv(self.ingestion_config.test_data_path, index=False, header=True)
-
-            logging.info("INGESTION OF DATA IS COMPLETED!")
-
-            return (
-                self.ingestion_config.train_data_path,
-                self.ingestion_config.test_data_path
-            )
-        except Exception as e:
-            raise CustomException(e, sys)
+def split_data(df, target_variable, test_size=0.2, random_state=42):
+    try:
+        X = df.drop(target_variable, axis=1)
+        y = df[target_variable]
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
+        logging.info("Train-test split initiated.")
+        return X_train, X_test, y_train, y_test
+    except Exception as e:
+        logging.error(f"Error in splitting data: {str(e)}")
+        raise
 
 if __name__ == "__main__":
-    obj = DataIngestion()
-    train_data, test_data = obj.initiate_data_ingestion()
+    # Example usage
+    file_path = "C:\\Users\\kabee\\OneDrive\\Desktop\\DS_PROJECT\\notebook\\data\\Obesity Estimation Cleaned.csv"
+    target_variable = "Obesity"
+    test_size = 0.2
+    random_state = 42
 
-    data_transformation = DataTransformation()
-    input_feature_train_df, input_feature_test_df, target_feature_train_df, target_feature_test_df = data_transformation.initiate_data_transformation(train_data, test_data)
+    # Load data
+    df = load_data(file_path)
 
-    config = DataIngestionConfig()
-
-    train_data_path = config.train_data_path
-    test_data_path = config.test_data_path
-
-    train_data, test_data = load_data(train_data_path, test_data_path)
-    if train_data is not None and test_data is not None:
-        print("Train data loaded successfully!")
-        print("Test data loaded successfully!")
-    else:
-        print("Failed to load train and test data.")
+    # Split data
+    X_train, X_test, y_train, y_test = split_data(df, target_variable, test_size, random_state)

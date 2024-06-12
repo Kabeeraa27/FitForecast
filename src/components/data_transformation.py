@@ -1,37 +1,37 @@
-import os
-import sys
-from dataclasses import dataclass
 import pandas as pd
-from src.exception import CustomException
+from sklearn.model_selection import train_test_split
 from src.logger import logging
+import os
 
-@dataclass
-class DataTransformationConfig:
-    preprocessor_obj_file_path = os.path.join('artifacts', 'preprocessor.pkl')
+def load_data(file_path):
+    try:
+        df = pd.read_csv(file_path)
+        logging.info(f"Read dataset as DataFrame from {file_path}.")
+        return df
+    except Exception as e:
+        logging.error(f"Error in loading data from {file_path}: {str(e)}")
+        raise
 
-class DataTransformation:
-    def __init__(self):
-        self.data_transformation_config = DataTransformationConfig()
+def split_data(df, target_variable, test_size=0.2, random_state=42):
+    try:
+        X = df.drop(target_variable, axis=1)
+        y = df[target_variable]
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
+        logging.info("Train-test split initiated.")
+        return X_train, X_test, y_train, y_test
+    except Exception as e:
+        logging.error(f"Error in splitting data: {str(e)}")
+        raise
 
-    def initiate_data_transformation(self, train_path, test_path):
-        try:
-            train_df = pd.read_csv(train_path)
-            test_df = pd.read_csv(test_path)
-            
-            target_column_name = "Obesity"  # Update target column name
-            input_feature_train_df = train_df.drop(columns=[target_column_name], axis=1)
+if __name__ == "__main__":
+    # Example usage
+    file_path = "C:\\Users\\kabee\\OneDrive\\Desktop\\DS_PROJECT\\notebook\\data\\Obesity Estimation Cleaned.csv"
+    target_variable = "Obesity"
+    test_size = 0.2
+    random_state = 42
 
-            # Print column names for debugging
-            print("Columns in the train dataset:", train_df.columns)
-            print("Columns in the test dataset:", test_df.columns)
+    # Load data
+    df = load_data(file_path)
 
-            input_feature_test_df = test_df.drop(columns=[target_column_name], axis=1)
-            target_feature_train_df = train_df[target_column_name]
-            target_feature_test_df = test_df[target_column_name]
-
-            # Further processing...
-
-            return input_feature_train_df, input_feature_test_df, target_feature_train_df, target_feature_test_df
-
-        except Exception as e:
-            raise CustomException(e, sys)
+    # Split data
+    X_train, X_test, y_train, y_test = split_data(df, target_variable, test_size, random_state)
