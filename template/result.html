@@ -1,0 +1,138 @@
+<!-- index.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Prediction Form</title>
+    <style>
+        body {
+            text-align: center;
+        }
+        form {
+            display: inline-block;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <h2>Custom Prediction Form</h2>
+    <form id="predictionForm" action="/predict" method="post">
+        <label for="taskSelection">Select Prediction Task:</label>
+        <select id="taskSelection" name="task">
+            <option value="regression">Predict BMI</option>
+            <option value="classification">Predict Obesity</option>
+        </select>
+        <br><br>
+
+        <!-- Features for Regression (BMI Prediction) -->
+        <div id="regressionInputs">
+            <label for="age">Age:</label><br>
+            <input type="number" name="age" value="" required>
+            <br><br>
+
+            <label for="height">Height (cm):</label><br>
+            <input type="number" name="height" value="" required>
+            <br><br>
+
+            <label for="weight">Weight (kg):</label><br>
+            <input type="number" name="weight" value="" required>
+            <br><br>
+
+            <label for="freq_veg">Frequency of Vegetable Consumption:</label><br>
+            <select name="freq_veg">
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+            </select>
+            <br><br>
+
+            <label for="main_meals">Number of Main Meals Daily:</label><br>
+            <input type="number" name="main_meals" value="" required>
+            <br><br>
+
+            <label for="water_intake">Daily Water Intake (liters):</label><br>
+            <input type="number" name="water_intake" value="" required>
+            <br><br>
+
+            <label for="freq_phy_act">Frequency of Physical Activity:</label><br>
+            <select name="freq_phy_act">
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="never">Never</option>
+            </select>
+            <br><br>
+
+            <label for="tech_use">Daily Tech Use (hours):</label><br>
+            <input type="number" name="tech_use" value="" required>
+            <br><br>
+        </div>
+        
+        <!-- Features for Classification (Obesity Prediction) -->
+        <div id="classificationInputs" style="display:none;">
+            <label for="gender">Gender:</label><br>
+            <select name="gender">
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+            </select>
+            <br><br>
+
+            <label for="fam_overweight_hist">Family History of Overweight:</label><br>
+            <select name="fam_overweight_hist">
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+            </select>
+            <br><br>
+
+            <label for="freq_high_cal_food">Frequency of High-Caloric Food Consumption:</label><br>
+            <select name="freq_high_cal_food">
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+            </select>
+            <br><br>
+
+            <label for="food_btw_meals">Consumption of Food Between Meals:</label><br>
+            <select name="food_btw_meals">
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+            </select>
+            <br><br>
+
+            <label for="smoke">Smoking Habits:</label><br>
+            <select name="smoke">
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+            </select>
+            <br><br>
+
+            <label for="calorie_monitor">Calorie Monitoring:</label><br>
+            <select name="calorie_monitor">
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+            </select>
+            <br><br>
+
+            <label for="alcohol_consump">Alcohol Consumption:</label><br>
+            <select name="alcohol_consump">
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="never">Never</option>
+            </select>
+            <br><br>
+
+            <label for="transport">Transportation Mode:</label><br>
+            <select name="transport">
+                <option value="car">Car</option>
+                <option value="bike">Bike</option>
+                <option value="walk">Walk</option>
+                <option value="public_transport">Public Transport</option>
+            </select>
+            <br><br>
+        </div>
+
+        <input type="submit" value="Predict">
+    </form>
+    <br><br>
+    <div id="prediction

@@ -5,8 +5,6 @@ seaborn
 catboost
 xgboost
 scikit-learn
-<<<<<<< HEAD
+flask
 dill
-=======
->>>>>>> 66e6f1154ac29fc8979ada33cf599ec0656515bd
 #-e .

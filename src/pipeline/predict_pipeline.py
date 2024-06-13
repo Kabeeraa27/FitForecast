@@ -1,61 +1,29 @@
-import sys
-import pandas as pd
-from src.exception import CustomException
-from src.utils import load_object
+#predict_pipeline.py
+import pickle
+import joblib
 
+def load_model(filename):
+    with open(filename, 'rb') as f:
+        model = pickle.load(f)
+    return model
 
-class PredictPipeline:
-    def __init__(self):
-        pass
+def load_models():
+    regression_model = joblib.load('artifacts/regression_model.pkl')
+    regression_preprocessor = joblib.load('artifacts/regression_preprocessor.pkl')
+    classification_model = joblib.load('artifacts/classification_model.pkl')
+    classification_preprocessor = joblib.load('artifacts/classification_preprocessor.pkl')
+    return regression_preprocessor, regression_model, classification_preprocessor, classification_model
 
-    def predict(self,features):
-        try:
-            model_path=os.path.join("artifacts","model.pkl")
-            preprocessor_path=os.path.join('artifacts','preprocessor.pkl')
-            print("Before Loading")
-            model=load_object(file_path=model_path)
-            preprocessor=load_object(file_path=preprocessor_path)
-            print("After Loading")
-            data_scaled=preprocessor.transform(features)
-            preds=model.predict(data_scaled)
-            return preds
-        
-        except Exception as e:
-            raise CustomException(e,sys)
+def predict_regression(input_data, preprocessor, model):
+    # Transform input data
+    input_transformed = preprocessor.transform([input_data])
+    # Predict
+    prediction = model.predict(input_transformed)
+    return prediction
 
-
-
-class CustomData:
-    def __init__(  self,
-        gender: str,
-        race_ethnicity: str,
-        parental_level_of_education,
-        lunch: str,
-        test_preparation_course: str,
-        reading_score: int,
-        writing_score: int):
-
-        self.gender = gender
-        self.race_ethnicity = race_ethnicity
-        self.parental_level_of_education = parental_level_of_education
-        self.lunch = lunch
-        self.test_preparation_course = test_preparation_course
-        self.reading_score = reading_score
-        self.writing_score = writing_score
-
-    def get_data_as_data_frame(self):
-        try:
-            custom_data_input_dict = {
-                "gender": [self.gender],
-                "race_ethnicity": [self.race_ethnicity],
-                "parental_level_of_education": [self.parental_level_of_education],
-                "lunch": [self.lunch],
-                "test_preparation_course": [self.test_preparation_course],
-                "reading_score": [self.reading_score],
-                "writing_score": [self.writing_score],
-            }
-
-            return pd.DataFrame(custom_data_input_dict)
-
-        except Exception as e:
-            raise CustomException(e, sys)
+def predict_classification(input_data, preprocessor, model):
+    # Transform input data
+    input_transformed = preprocessor.transform([input_data])
+    # Predict
+    prediction = model.predict(input_transformed)
+    return prediction

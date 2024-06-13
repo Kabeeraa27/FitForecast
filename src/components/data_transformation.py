@@ -1,37 +1,31 @@
-import pandas as pd
-from sklearn.model_selection import train_test_split
-from src.logger import logging
-import os
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+import joblib
 
-def load_data(file_path):
-    try:
-        df = pd.read_csv(file_path)
-        logging.info(f"Read dataset as DataFrame from {file_path}.")
-        return df
-    except Exception as e:
-        logging.error(f"Error in loading data from {file_path}: {str(e)}")
-        raise
+def preprocess_data(X):
+    # Identify numerical and categorical columns
+    numerical_features = X.select_dtypes(include=['float64', 'int64']).columns
+    categorical_features = X.select_dtypes(include=['object']).columns
 
-def split_data(df, target_variable, test_size=0.2, random_state=42):
-    try:
-        X = df.drop(target_variable, axis=1)
-        y = df[target_variable]
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
-        logging.info("Train-test split initiated.")
-        return X_train, X_test, y_train, y_test
-    except Exception as e:
-        logging.error(f"Error in splitting data: {str(e)}")
-        raise
+    # Define preprocessing steps for numerical and categorical data
+    numerical_transformer = StandardScaler()
+    categorical_transformer = OneHotEncoder(handle_unknown='ignore')
 
-if __name__ == "__main__":
-    # Example usage
-    file_path = "C:\\Users\\kabee\\OneDrive\\Desktop\\DS_PROJECT\\notebook\\data\\Obesity Estimation Cleaned.csv"
-    target_variable = "Obesity"
-    test_size = 0.2
-    random_state = 42
+    # Combine preprocessing steps
+    preprocessor = ColumnTransformer(
+        transformers=[
+            ('num', numerical_transformer, numerical_features),
+            ('cat', categorical_transformer, categorical_features)
+        ])
 
-    # Load data
-    df = load_data(file_path)
+    # Create a pipeline with preprocessing steps
+    pipeline = Pipeline(steps=[('preprocessor', preprocessor)])
 
-    # Split data
-    X_train, X_test, y_train, y_test = split_data(df, target_variable, test_size, random_state)
+    # Fit and transform the data
+    X_transformed = pipeline.fit_transform(X)
+
+    # Save the preprocessor
+    joblib.dump(pipeline, 'artifacts/preprocessor.pkl')
+
+    return X_transformed, pipeline
