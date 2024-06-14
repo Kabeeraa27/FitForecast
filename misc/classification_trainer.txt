@@ -1,0 +1,115 @@
+from sklearn.pipeline import Pipeline
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
+from sklearn.preprocessing import LabelEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from xgboost import XGBClassifier
+from catboost import CatBoostClassifier
+from sklearn.ensemble import AdaBoostClassifier, GradientBoostingClassifier
+import joblib
+import pandas as pd
+from src.logger import log_info
+
+def preprocess_data(X_train, X_test):
+    categorical_features = ['Gender', 'FamOverweightHist', 'FreqHighCalFood', 'FoodBtwMeals', 'Smoke', 'CalorieMonitor', 'AlcoholConsump', 'Transport']
+    numerical_features = ['Age', 'Height', 'Weight', 'FreqVeg', 'MainMeals', 'WaterIntake', 'FreqPhyAct', 'TechUse']
+
+    numeric_transformer = Pipeline(steps=[
+        ('scaler', StandardScaler())
+    ])
+
+    categorical_transformer = Pipeline(steps=[
+        ('onehot', OneHotEncoder(handle_unknown='ignore'))
+    ])
+
+    preprocessor = ColumnTransformer(
+        transformers=[
+            ('num', numeric_transformer, numerical_features),
+            ('cat', categorical_transformer, categorical_features)
+        ])
+
+    # Fit-transform on training data
+    X_train_transformed = preprocessor.fit_transform(X_train)
+
+    # Transform on test data
+    X_test_transformed = preprocessor.transform(X_test)
+
+    # Get feature names after transformation
+    feature_names = numerical_features + list(preprocessor.named_transformers_['cat']['onehot'].get_feature_names_out(categorical_features))
+
+    return X_train_transformed, X_test_transformed, feature_names
+
+
+def train_classification_model(X_train, X_test, y_train, y_test):
+    # Preprocess data and get feature names
+    X_train_transformed, X_test_transformed, feature_names = preprocess_data(X_train, X_test)
+
+    # Convert transformed data to DataFrames if necessary
+    if isinstance(X_train, pd.DataFrame):
+        X_train_transformed = pd.DataFrame(X_train_transformed, columns=feature_names)
+        X_test_transformed = pd.DataFrame(X_test_transformed, columns=feature_names)  # Use feature_names for columns
+
+    # Define models
+    Model_cls = {
+        "Logistic Regression": LogisticRegression(max_iter=10000),
+        "K-Neighbors Classifier": KNeighborsClassifier(),
+        "Decision Tree": DecisionTreeClassifier(),
+        "Random Forest Classifier": RandomForestClassifier(),
+        "XGBClassifier": XGBClassifier(use_label_encoder=False, eval_metric='mlogloss'), 
+        "CatBoost Classifier": CatBoostClassifier(verbose=False),
+        "AdaBoost Classifier": AdaBoostClassifier(),
+        "Gradient Boosting Classifier": GradientBoostingClassifier(),
+    }
+
+    results = []
+    best_model_name = None
+    best_model_obj = None
+    best_accuracy_score = -float('inf')
+
+    for model_name, model in Model_cls.items():
+        clf = Pipeline(steps=[
+            ('classifier', model)
+        ])
+
+        # Fit the model
+        clf.fit(X_train_transformed, y_train)
+        y_pred = clf.predict(X_test_transformed)
+
+        accuracy = accuracy_score(y_test, y_pred)
+        precision = precision_score(y_test, y_pred, average='weighted', zero_division=0)
+        recall = recall_score(y_test, y_pred, average='weighted')
+        f1 = f1_score(y_test, y_pred, average='weighted')
+        roc_auc = roc_auc_score(y_test, clf.predict_proba(X_test_transformed), multi_class='ovr')
+
+        result = {
+            "Model": model_name,
+            "Accuracy": accuracy,
+            "Precision": precision,
+            "Recall": recall,
+            "F1 Score": f1,
+            "ROC-AUC": roc_auc,
+        }
+
+        results.append(result)
+
+        if accuracy > best_accuracy_score:
+            best_accuracy_score = accuracy
+            best_model_name = model_name
+            best_model_obj = clf  
+
+    results_df = pd.DataFrame(results)
+    results_df = results_df.sort_values(by='Accuracy', ascending=False)
+
+    log_info(f"BEST MODEL IS: {best_model_name}")
+
+    # Save best model
+    joblib.dump(best_model_obj, 'artifacts/classification_model.pkl')
+    log_info(f"CLASSIFICATION MODEL PICKLE FILE GENERATED AS 'classification_model.pkl' IN ARTIFACTS FOLDER")
+
+    return results_df

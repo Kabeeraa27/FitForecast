@@ -4,13 +4,12 @@ import pandas as pd
 from src.logger import log_info, log_error
 
 def load_data(file_path):
-    file_path = "C:\\Users\\kabee\\OneDrive\\Desktop\\DS_PROJECT\\notebook\\data\\Obesity Estimation Cleaned.csv"
     try:
         df = pd.read_csv(file_path)  # Adjust based on your actual data format
         log_info(f"Data loaded successfully from {file_path}")
         
         # Save the loaded data to artifacts folder
-        df.to_csv('C:\\Users\\kabee\\OneDrive\\Desktop\\DS_PROJECT\\artifacts\\data.csv', index=False)
+        df.to_csv('artifacts/data.csv', index=False)
         log_info("Data saved as data.csv in artifacts folder")
 
         return df

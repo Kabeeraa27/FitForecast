@@ -1,57 +1,48 @@
-import pandas as pd
+from classification_trainer import train_models_and_evaluate
 from data_ingestion import load_data
-from classification_trainer import train_classification_model
-from sklearn.model_selection import train_test_split
+import pandas as pd
 from sklearn.preprocessing import LabelEncoder
-from src.logger import log_info, log_error
+import logging
 import os
-import warnings
-import sys
 
-warnings.filterwarnings('ignore', category=UserWarning, module='joblib')
-
+logging.basicConfig(level=logging.INFO)
 
 def main():
 
-    warnings.filterwarnings("ignore", message="Precision is ill-defined and being set to 0.0 in labels with no predicted samples.")
-    warnings.filterwarnings("ignore", message="Could not find the number of physical cores*", category=UserWarning)
-    warnings.filterwarnings("ignore", category=FutureWarning)
-    warnings.filterwarnings("ignore", message=".*loky.backend.context.*")
-    warnings.filterwarnings("ignore", category=UserWarning, module='joblib')
-    sys.stderr = open(os.devnull, 'w')
-
+    os.environ["LOKY_MAX_CPU_COUNT"] = "4"  # Set to desired number of cores
 
     # Load data
-    data_file_path = "C:\\Users\\kabee\\OneDrive\\Desktop\\DS_PROJECT\\notebook\\data\\Obesity Estimation Cleaned.csv"
-    data = load_data(data_file_path)
-    
-    if data is None:
-        log_error("DATA LOADING FAILED. EXITING...")
-        return
-    
-    # Define target column
-    target_column = 'Obesity'
+    file_path = 'path_to_your_data.csv'  # Adjust path to your data
+    df = load_data(file_path)
 
-    if target_column not in data.columns:
-        log_error(f"TARGET COLUMN '{target_column}' NOT FOUND IN THE DATASET. EXITING...")
+    if df is None:
+        logging.error("Failed to load data. Exiting.")
         return
 
-    # Drop the target column
-    X = data.drop(columns=[target_column, 'BMI'])
-    y = data[target_column]
+    # Assuming 'Obesity' is your target column
+    X = df.drop(columns=['Obesity'])
+    y = df['Obesity']
 
+    # Encode categorical variables
     label_encoder = LabelEncoder()
-    y = label_encoder.fit_transform(y)  # Correct usage on y directly
+    for col in X.select_dtypes(include=['object']).columns:
+        X[col] = label_encoder.fit_transform(X[col])
 
-    # Split the data
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    
-    # Ensure the artifacts directory exists
-    os.makedirs('artifacts', exist_ok=True)
+    # Train models and evaluate
+    best_model_name, evaluation_results = train_models_and_evaluate(X, y)
 
-    # Train classification model
-    classification_results = train_classification_model(X_train, X_test, y_train, y_test)
-    print("Classification Results:\n", classification_results)
+    # Log best model and evaluation results
+    logging.info(f"Best Model: {best_model_name}")
+    logging.info("Evaluation Results:")
+    for result in evaluation_results:
+        logging.info(result)
+
+    logging.info("Saving pickle files...")
+    # Log saving of pickle files
+    logging.info("Pickle files saved in artifacts folder.")
+
+    # Return best model and evaluation results
+    return best_model_name, evaluation_results
 
 if __name__ == "__main__":
     main()

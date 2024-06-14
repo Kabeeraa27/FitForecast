@@ -1,91 +1,69 @@
-from sklearn.pipeline import Pipeline
+import pickle
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 from sklearn.preprocessing import LabelEncoder
-from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
-from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, GradientBoostingClassifier
 from xgboost import XGBClassifier
 from catboost import CatBoostClassifier
-from sklearn.ensemble import AdaBoostClassifier, GradientBoostingClassifier
-import joblib
-import pandas as pd
-from src.logger import log_info
+from data_transformation import preprocess_data
 
-def preprocess_data(X_train, X_test):
-    categorical_features = ['Gender', 'FamOverweightHist', 'FreqHighCalFood', 'FoodBtwMeals', 'Smoke', 'CalorieMonitor', 'AlcoholConsump', 'Transport']
-    numerical_features = ['Age', 'Height', 'Weight', 'FreqVeg', 'MainMeals', 'WaterIntake', 'FreqPhyAct', 'TechUse']
+Model_cls = {
+    "Logistic Regression": LogisticRegression(max_iter=10000),
+    "K-Neighbors Classifier": KNeighborsClassifier(),
+    "Decision Tree": DecisionTreeClassifier(),
+    "Random Forest Classifier": RandomForestClassifier(),
+    "XGBClassifier": XGBClassifier(use_label_encoder=False, eval_metric='mlogloss'), 
+    "CatBoost Classifier": CatBoostClassifier(verbose=False),
+    "AdaBoost Classifier": AdaBoostClassifier(n_estimators=100, learning_rate=1.0),
+    "Gradient Boosting Classifier": GradientBoostingClassifier(),
+}
 
-    numeric_transformer = Pipeline(steps=[
-        ('scaler', StandardScaler())
-    ])
-
-    categorical_transformer = Pipeline(steps=[
-        ('onehot', OneHotEncoder(handle_unknown='ignore'))
-    ])
-
-    preprocessor = ColumnTransformer(
-        transformers=[
-            ('num', numeric_transformer, numerical_features),
-            ('cat', categorical_transformer, categorical_features)
-        ])
-
-    # Fit-transform on training data
-    X_train_transformed = preprocessor.fit_transform(X_train)
-
-    # Transform on test data
-    X_test_transformed = preprocessor.transform(X_test)
-
-    # Get feature names after transformation
-    feature_names = numerical_features + list(preprocessor.named_transformers_['cat']['onehot'].get_feature_names_out(categorical_features))
-
-    return X_train_transformed, X_test_transformed, feature_names
-
-
-def train_classification_model(X_train, X_test, y_train, y_test):
-    # Preprocess data and get feature names
-    X_train_transformed, X_test_transformed, feature_names = preprocess_data(X_train, X_test)
-
-    # Convert transformed data to DataFrames if necessary
-    if isinstance(X_train, pd.DataFrame):
-        X_train_transformed = pd.DataFrame(X_train_transformed, columns=feature_names)
-        X_test_transformed = pd.DataFrame(X_test_transformed, columns=feature_names)  # Use feature_names for columns
-
-    # Define models
-    Model_cls = {
-        "Logistic Regression": LogisticRegression(max_iter=10000),
-        "K-Neighbors Classifier": KNeighborsClassifier(),
-        "Decision Tree": DecisionTreeClassifier(),
-        "Random Forest Classifier": RandomForestClassifier(),
-        "XGBClassifier": XGBClassifier(use_label_encoder=False, eval_metric='mlogloss'), 
-        "CatBoost Classifier": CatBoostClassifier(verbose=False),
-        "AdaBoost Classifier": AdaBoostClassifier(),
-        "Gradient Boosting Classifier": GradientBoostingClassifier(),
-    }
-
+def train_models_and_evaluate(X, y):
     results = []
-    best_model_name = None
-    best_model_obj = None
-    best_accuracy_score = -float('inf')
+
+    # Label encoding for y if it's categorical strings
+    if isinstance(y[0], str):
+        label_encoder = LabelEncoder()
+        y = label_encoder.fit_transform(y)
+        label_mapping = dict(zip(label_encoder.classes_, label_encoder.transform(label_encoder.classes_)))
+        print("Label Mapping:", label_mapping)
 
     for model_name, model in Model_cls.items():
-        clf = Pipeline(steps=[
+        model_pipeline = Pipeline(steps=[
+            ('preprocessor', None),  # Placeholder for actual preprocessor
             ('classifier', model)
         ])
 
-        # Fit the model
-        clf.fit(X_train_transformed, y_train)
-        y_pred = clf.predict(X_test_transformed)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
+        model_pipeline.fit(X_train, y_train)
+
+        y_pred = model_pipeline.predict(X_test)
+        
+        # Adjusted evaluation metrics for multiclass classification
         accuracy = accuracy_score(y_test, y_pred)
-        precision = precision_score(y_test, y_pred, average='weighted', zero_division=0)
-        recall = recall_score(y_test, y_pred, average='weighted')
-        f1 = f1_score(y_test, y_pred, average='weighted')
-        roc_auc = roc_auc_score(y_test, clf.predict_proba(X_test_transformed), multi_class='ovr')
+        precision = precision_score(y_test, y_pred, average='weighted', zero_division=1)  # Use 'weighted' for multiclass
+        recall = recall_score(y_test, y_pred, average='weighted')  # Use 'weighted' for multiclass
+        f1 = f1_score(y_test, y_pred, average='weighted')  # Use 'weighted' for multiclass
+        
+        # Check if y contains string labels and convert to numeric for ROC-AUC calculation
+        if isinstance(y_test[0], str):
+            y_test_numeric = label_encoder.transform(y_test)
+            y_pred_numeric = label_encoder.transform(y_pred)
+        else:
+            y_test_numeric = y_test
+            y_pred_numeric = y_pred
+
+        try:
+            roc_auc = roc_auc_score(y_test_numeric, model_pipeline.predict_proba(X_test), multi_class='ovr')  # Use 'ovr' for multiclass
+        except ValueError:
+            roc_auc = 0.0
 
         result = {
             "Model": model_name,
@@ -98,18 +76,20 @@ def train_classification_model(X_train, X_test, y_train, y_test):
 
         results.append(result)
 
-        if accuracy > best_accuracy_score:
-            best_accuracy_score = accuracy
-            best_model_name = model_name
-            best_model_obj = clf  
-
     results_df = pd.DataFrame(results)
-    results_df = results_df.sort_values(by='Accuracy', ascending=False)
+    best_model_name = results_df.loc[results_df['F1 Score'].idxmax()]['Model']
 
-    log_info(f"BEST MODEL IS: {best_model_name}")
+    best_model = Model_cls[best_model_name]
+    best_model_pipeline = Pipeline(steps=[
+        ('preprocessor', preprocess_data(X)[1]),  # Use the actual preprocessor
+        ('classifier', best_model)
+    ])
+    best_model_pipeline.fit(X, y)
 
-    # Save best model
-    joblib.dump(best_model_obj, 'artifacts/classification_model.pkl')
-    log_info(f"CLASSIFICATION MODEL PICKLE FILE GENERATED AS 'classification_model.pkl' IN ARTIFACTS FOLDER")
+    with open('artifacts/classification_model.pkl', 'wb') as f:
+        pickle.dump(best_model_pipeline, f)
 
-    return results_df
+    with open('artifacts/classification_preprocessor.pkl', 'wb') as f:
+        pickle.dump(preprocess_data(X)[1], f)
+
+    return best_model_name, results
