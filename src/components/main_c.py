@@ -8,11 +8,10 @@ import os
 logging.basicConfig(level=logging.INFO)
 
 def main():
-
     os.environ["LOKY_MAX_CPU_COUNT"] = "4"  # Set to desired number of cores
 
     # Load data
-    file_path = 'path_to_your_data.csv'  # Adjust path to your data
+    file_path = 'C:\\Users\\kabee\\OneDrive\\Desktop\\DS_PROJECT\\notebook\\data\\Obesity Estimation Cleaned.csv'
     df = load_data(file_path)
 
     if df is None:
@@ -20,7 +19,7 @@ def main():
         return
 
     # Assuming 'Obesity' is your target column
-    X = df.drop(columns=['Obesity'])
+    X = df.drop(columns=['BMI', 'Obesity'])
     y = df['Obesity']
 
     # Encode categorical variables
