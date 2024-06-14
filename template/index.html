@@ -3,187 +3,156 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Custom Prediction Form</title>
+    <title>Obesity Prediction</title>
     <style>
         body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding-top: 50px; /* Add padding to ensure visibility */
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            box-sizing: border-box;
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin: 5px 0 15px 0;
+            display: block;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            background-color: #007bff;
+            color: white;
+            padding: 14px 20px;
+            margin: 8px 0;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result-box {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #e2e2e2;
             text-align: center;
         }
-        form {
-            display: inline-block;
-            text-align: left;
-        }
     </style>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
-    <h2>Custom Prediction Form</h2>
-    <form id="predictionForm">
-        <label for="taskSelection">Select Prediction Task:</label>
-        <select id="taskSelection" name="task">
-            <option value="regression">Predict BMI</option>
-            <option value="classification">Predict Obesity</option>
-        </select>
-        <br><br>
-
-        <!-- Features for Regression (BMI Prediction) -->
-        <div id="regressionInputs">
-            <label for="age">Age:</label><br>
-            <input type="number" name="age" required>
-            <br><br>
-
-            <label for="height">Height (cm):</label><br>
-            <input type="number" name="height" required>
-            <br><br>
-
-            <label for="weight">Weight (kg):</label><br>
-            <input type="number" name="weight" required>
-            <br><br>
-
-            <label for="freq_veg">Frequency of Vegetable Consumption:</label><br>
-            <select name="freq_veg">
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
+    <div class="container">
+        <form action="/predict" method="post">
+            <h2>Obesity Prediction</h2>
+            <label for="gender">Gender:</label>
+            <select id="gender" name="gender">
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
             </select>
-            <br><br>
-
-            <label for="main_meals">Number of Main Meals Daily:</label><br>
-            <input type="number" name="main_meals" required>
-            <br><br>
-
-            <label for="water_intake">Daily Water Intake (liters):</label><br>
-            <input type="number" name="water_intake" required>
-            <br><br>
-
-            <label for="freq_phy_act">Frequency of Physical Activity:</label><br>
-            <select name="freq_phy_act">
-                <option value="daily">Daily</option>
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-                <option value="never">Never</option>
+            
+            <label for="age">Age:</label>
+            <input type="number" id="age" name="age" required>
+            
+            <label for="height">Height (in meters):</label>
+            <input type="number" step="0.01" id="height" name="height" required>
+            
+            <label for="weight">Weight (in kg):</label>
+            <input type="number" step="0.1" id="weight" name="weight" required>
+            
+            <label for="famOverweightHist">Family Overweight History:</label>
+            <select id="famOverweightHist" name="famOverweightHist">
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
             </select>
-            <br><br>
 
-            <label for="tech_use">Daily Tech Use (hours):</label><br>
-            <input type="number" name="tech_use" required>
-            <br><br>
+            <label for="freqHighCalFood">Frequency of High Caloric Food Consumption:</label>
+            <input type="number" id="freqHighCalFood" name="freqHighCalFood" required>
+
+            <label for="foodBtwMeals">Food Consumption Between Meals:</label>
+            <select id="foodBtwMeals" name="foodBtwMeals">
+                <option value="Frequently">Frequently</option>
+                <option value="Sometimes">Sometimes</option>
+                <option value="Always">Always</option>
+            </select>
+
+            <label for="smoke">Smoking Habit:</label>
+            <select id="smoke" name="smoke">
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+
+            <label for="calorieMonitor">Calorie Monitor:</label>
+            <select id="calorieMonitor" name="calorieMonitor">
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+
+            <label for="alcoholConsump">Alcohol Consumption:</label>
+            <select id="alcoholConsump" name="alcoholConsump">
+                <option value="Frequently">Frequently</option>
+                <option value="Sometimes">Sometimes</option>
+                <option value="Always">Always</option>
+            </select>
+
+            <label for="transport">Mode of Transport:</label>
+            <select id="transport" name="transport">
+                <option value="Walking">Walking</option>
+                <option value="Bike">Bike</option>
+                <option value="Public Transport">Public Transport</option>
+                <option value="Car">Car</option>
+                <option value="Motorbike">Motorbike</option>
+            </select>
+
+            <label for="freqVeg">Frequency of Vegetable Consumption:</label>
+            <input type="number" id="freqVeg" name="freqVeg" required>
+
+            <label for="mainMeals">Number of Main Meals:</label>
+            <input type="number" id="mainMeals" name="mainMeals" required>
+
+            <label for="waterIntake">Daily Water Intake (in liters):</label>
+            <input type="number" step="0.1" id="waterIntake" name="waterIntake" required>
+
+            <label for="freqPhyAct">Frequency of Physical Activity:</label>
+            <input type="number" id="freqPhyAct" name="freqPhyAct" required>
+
+            <label for="techUse">Technology Use (hours per day):</label>
+            <input type="number" id="techUse" name="techUse" required>
+            
+            <button type="submit">Predict</button>
+        </form>
+
+        {% if result %}
+        <div class="result-box">
+            <h3>Result</h3>
+            <p>{{ result }}</p>
         </div>
-        
-        <!-- Features for Classification (Obesity Prediction) -->
-        <div id="classificationInputs" style="display:none;">
-            <label for="gender">Gender:</label><br>
-            <select name="gender">
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-            </select>
-            <br><br>
-
-            <label for="fam_overweight_hist">Family History of Overweight:</label><br>
-            <select name="fam_overweight_hist">
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
-            </select>
-            <br><br>
-
-            <label for="freq_high_cal_food">Frequency of High-Caloric Food Consumption:</label><br>
-            <select name="freq_high_cal_food">
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
-            </select>
-            <br><br>
-
-            <label for="food_btw_meals">Consumption of Food Between Meals:</label><br>
-            <select name="food_btw_meals">
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
-            </select>
-            <br><br>
-
-            <label for="smoke">Smoking Habits:</label><br>
-            <select name="smoke">
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
-            </select>
-            <br><br>
-
-            <label for="calorie_monitor">Calorie Monitoring:</label><br>
-            <select name="calorie_monitor">
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
-            </select>
-            <br><br>
-
-            <label for="alcohol_consump">Alcohol Consumption:</label><br>
-            <select name="alcohol_consump">
-                <option value="daily">Daily</option>
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-                <option value="never">Never</option>
-            </select>
-            <br><br>
-
-            <label for="transport">Transportation Mode:</label><br>
-            <select name="transport">
-                <option value="car">Car</option>
-                <option value="bike">Bike</option>
-                <option value="walk">Walk</option>
-                <option value="public_transport">Public Transport</option>
-            </select>
-            <br><br>
-        </div>
-
-        <button type="button" id="predictBMI">Predict BMI</button>
-        <button type="button" id="predictObesity">Predict Obesity</button>
-    </form>
-    <br><br>
-    <div id="predictionResult"></div>
-
-    <script>
-        $(document).ready(function() {
-            $('#taskSelection').change(function() {
-                if ($(this).val() === 'regression') {
-                    $('#regressionInputs').show();
-                    $('#classificationInputs').hide();
-                } else {
-                    $('#regressionInputs').hide();
-                    $('#classificationInputs').show();
-                }
-            });
-
-            $('#predictBMI').click(function() {
-                predict('regression');
-            });
-
-            $('#predictObesity').click(function() {
-                predict('classification');
-            });
-
-            function predict(task) {
-                let inputs;
-                if (task === 'regression') {
-                    inputs = $('#regressionInputs :input').serializeArray();
-                } else {
-                    inputs = $('#classificationInputs :input').serializeArray();
-                }
-
-                let data = {};
-                inputs.forEach(input => {
-                    data[input.name] = input.value;
-                });
-
-                $.ajax({
-                    url: task === 'regression' ? '/predict_regression' : '/predict_classification',
-                    type: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify({ input: Object.values(data) }),
-                    success: function(response) {
-                        $('#predictionResult').html('Prediction: ' + response.prediction);
-                    },
-                    error: function(error) {
-                        $('#predictionResult').html('Error: ' + error.responseJSON.error);
-                    }
-                });
-            }
-        });
-    </script>
+        {% endif %}
+    </div>
 </body>
 </html>

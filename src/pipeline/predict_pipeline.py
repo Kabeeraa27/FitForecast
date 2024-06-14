@@ -1,29 +1,19 @@
-#predict_pipeline.py
+# prediction_pipeline.py
+
 import pickle
-import joblib
+import numpy as np
+import pandas as pd
 
-def load_model(filename):
-    with open(filename, 'rb') as f:
+def load_model_and_preprocessor():
+    with open('artifacts/classification_model.pkl', 'rb') as f:
         model = pickle.load(f)
-    return model
+    with open('artifacts/classification_preprocessor.pkl', 'rb') as f:
+        preprocessor = pickle.load(f)
+    return model, preprocessor
 
-def load_models():
-    regression_model = joblib.load('artifacts/regression_model.pkl')
-    regression_preprocessor = joblib.load('artifacts/regression_preprocessor.pkl')
-    classification_model = joblib.load('artifacts/classification_model.pkl')
-    classification_preprocessor = joblib.load('artifacts/classification_preprocessor.pkl')
-    return regression_preprocessor, regression_model, classification_preprocessor, classification_model
-
-def predict_regression(input_data, preprocessor, model):
-    # Transform input data
-    input_transformed = preprocessor.transform([input_data])
-    # Predict
-    prediction = model.predict(input_transformed)
-    return prediction
-
-def predict_classification(input_data, preprocessor, model):
-    # Transform input data
-    input_transformed = preprocessor.transform([input_data])
-    # Predict
-    prediction = model.predict(input_transformed)
-    return prediction
+def predict(features):
+    model, preprocessor = load_model_and_preprocessor()
+    features_df = pd.DataFrame([features])
+    preprocessed_features = preprocessor.transform(features_df)
+    prediction = model.predict(preprocessed_features)
+    return prediction[0]

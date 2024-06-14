@@ -18,7 +18,7 @@ Model_cls = {
     "K-Neighbors Classifier": KNeighborsClassifier(),
     "Decision Tree": DecisionTreeClassifier(),
     "Random Forest Classifier": RandomForestClassifier(),
-    "XGBClassifier": XGBClassifier(use_label_encoder=False, eval_metric='mlogloss'), 
+    "XGBClassifier": XGBClassifier(use_label_encoder=False, eval_metric='mlogloss'),
     "CatBoost Classifier": CatBoostClassifier(verbose=False),
     "AdaBoost Classifier": AdaBoostClassifier(n_estimators=100, learning_rate=1.0),
     "Gradient Boosting Classifier": GradientBoostingClassifier(),
@@ -28,7 +28,7 @@ def train_models_and_evaluate(X, y):
     results = []
 
     # Label encoding for y if it's categorical strings
-    if isinstance(y[0], str):
+    if isinstance(y.iloc[0], str):
         label_encoder = LabelEncoder()
         y = label_encoder.fit_transform(y)
         label_mapping = dict(zip(label_encoder.classes_, label_encoder.transform(label_encoder.classes_)))
@@ -45,13 +45,13 @@ def train_models_and_evaluate(X, y):
         model_pipeline.fit(X_train, y_train)
 
         y_pred = model_pipeline.predict(X_test)
-        
+
         # Adjusted evaluation metrics for multiclass classification
         accuracy = accuracy_score(y_test, y_pred)
         precision = precision_score(y_test, y_pred, average='weighted', zero_division=1)  # Use 'weighted' for multiclass
         recall = recall_score(y_test, y_pred, average='weighted')  # Use 'weighted' for multiclass
         f1 = f1_score(y_test, y_pred, average='weighted')  # Use 'weighted' for multiclass
-        
+
         # Check if y contains string labels and convert to numeric for ROC-AUC calculation
         if isinstance(y_test[0], str):
             y_test_numeric = label_encoder.transform(y_test)
@@ -80,8 +80,9 @@ def train_models_and_evaluate(X, y):
     best_model_name = results_df.loc[results_df['F1 Score'].idxmax()]['Model']
 
     best_model = Model_cls[best_model_name]
+    preprocessor = preprocess_data(X)[1]
     best_model_pipeline = Pipeline(steps=[
-        ('preprocessor', preprocess_data(X)[1]),  # Use the actual preprocessor
+        ('preprocessor', preprocessor),
         ('classifier', best_model)
     ])
     best_model_pipeline.fit(X, y)
@@ -90,6 +91,6 @@ def train_models_and_evaluate(X, y):
         pickle.dump(best_model_pipeline, f)
 
     with open('artifacts/classification_preprocessor.pkl', 'wb') as f:
-        pickle.dump(preprocess_data(X)[1], f)
+        pickle.dump(preprocessor, f)
 
     return best_model_name, results

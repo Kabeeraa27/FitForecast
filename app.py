@@ -1,70 +1,35 @@
-from flask import Flask, request, jsonify, render_template
-import joblib
-import numpy as np
-import os
+from flask import Flask, render_template, request
+from src.pipeline.predict_pipeline import predict
 
-app = Flask(__name__, template_folder='template')  
-
-
-def load_model(filename):
-    model_path = os.path.join('artifacts', filename)
-    if os.path.exists(model_path):
-        return joblib.load(model_path)
-    else:
-        raise FileNotFoundError(f"File {filename} not found in artifacts directory.")
-
-def load_models():
-    regression_preprocessor = load_model('regression_preprocessor.pkl')
-    regression_model = load_model('regression_model.pkl')
-    classification_preprocessor = load_model('classification_preprocessor.pkl')
-    classification_model = load_model('classification_model.pkl')
-    return regression_preprocessor, regression_model, classification_preprocessor, classification_model
+app = Flask(__name__, template_folder='template')
 
 @app.route('/')
-def index():
+def home():
     return render_template('index.html')
 
-@app.route('/predict_regression', methods=['POST'])
-def predict_regression():
-    try:
-        data = request.json
-        input_data = np.array(data['input']).reshape(1, -1)
+@app.route('/predict', methods=['POST'])
+def predict_obesity():
+    features = {
+        'Gender': request.form['gender'],
+        'Age': float(request.form['age']),
+        'Height': float(request.form['height']),
+        'Weight': float(request.form['weight']),
+        'FamOverweightHist': request.form['famOverweightHist'],
+        'FreqHighCalFood': float(request.form['freqHighCalFood']),
+        'FoodBtwMeals': request.form['foodBtwMeals'],
+        'Smoke': request.form['smoke'],
+        'CalorieMonitor': request.form['calorieMonitor'],
+        'AlcoholConsump': request.form['alcoholConsump'],
+        'Transport': request.form['transport'],
+        'FreqVeg': float(request.form['freqVeg']),
+        'MainMeals': float(request.form['mainMeals']),
+        'WaterIntake': float(request.form['waterIntake']),
+        'FreqPhyAct': float(request.form['freqPhyAct']),
+        'TechUse': float(request.form['techUse'])
+    }
 
-        # Load the models
-        regression_preprocessor, regression_model, _, _ = load_models()
+    prediction = predict(features)
+    return render_template('index.html', result=prediction)
 
-        # Preprocess the input data
-        input_transformed = regression_preprocessor.transform(input_data)
-
-        # Predict using the regression model
-        prediction = regression_model.predict(input_transformed)
-        
-        # Return the prediction as JSON response
-        return jsonify({'prediction': float(prediction[0])})  # Ensure prediction is converted to a float
-
-    except Exception as e:
-        return jsonify({'error': str(e)})
-
-@app.route('/predict_classification', methods=['POST'])
-def predict_classification():
-    try:
-        data = request.json
-        input_data = np.array(data['input']).reshape(1, -1)
-
-        # Load the models
-        _, _, classification_preprocessor, classification_model = load_models()
-
-        # Preprocess the input data
-        input_transformed = classification_preprocessor.transform(input_data)
-
-        # Predict using the classification model
-        prediction = classification_model.predict(input_transformed)
-        
-        # Return the prediction as JSON response
-        return jsonify({'prediction': int(prediction[0])})  # Ensure prediction is converted to an integer
-
-    except Exception as e:
-        return jsonify({'error': str(e)})
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=True)
