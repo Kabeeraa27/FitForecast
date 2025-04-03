@@ -1,47 +1,21 @@
-from classification_trainer import train_models_and_evaluate
-from data_ingestion import load_data
-import pandas as pd
-from sklearn.preprocessing import LabelEncoder
-import logging
-import os
+from src.components.data_transformation import load_data, preprocess_data
+from src.components.classification_trainer import models_c
+from sklearn.pipeline import Pipeline
+import joblib
 
-logging.basicConfig(level=logging.INFO)
+# Load and preprocess data
+data = load_data(r'C:\Users\kabee\OneDrive\Desktop\DS_PROJECT\notebook\data\Obesity Estimation Cleaned.csv')
+preprocessor, X, y = preprocess_data(data)
 
-def main():
-    os.environ["LOKY_MAX_CPU_COUNT"] = "4"  # Set to desired number of cores
+# Train models
+for model_name, model in models_c.items():
+    pipeline = Pipeline(steps=[
+        ('preprocessor', preprocessor),
+        ('classifier', model)
+    ])
+    
+    pipeline.fit(X, y)  # Assuming full data training for demonstration
+    print(f"{model_name} trained successfully.")
 
-    # Load data
-    file_path = 'C:\\Users\\kabee\\OneDrive\\Desktop\\DS_PROJECT\\notebook\\data\\Obesity Estimation Cleaned.csv'
-    df = load_data(file_path)
-
-    if df is None:
-        logging.error("Failed to load data. Exiting.")
-        return
-
-    # Assuming 'Obesity' is your target column
-    X = df.drop(columns=['BMI', 'Obesity'])
-    y = df['Obesity']
-
-    # Encode categorical variables
-    label_encoder = LabelEncoder()
-    for col in X.select_dtypes(include=['object']).columns:
-        X[col] = label_encoder.fit_transform(X[col])
-
-    # Train models and evaluate
-    best_model_name, evaluation_results = train_models_and_evaluate(X, y)
-
-    # Log best model and evaluation results
-    logging.info(f"Best Model: {best_model_name}")
-    logging.info("Evaluation Results:")
-    for result in evaluation_results:
-        logging.info(result)
-
-    logging.info("Saving pickle files...")
-    # Log saving of pickle files
-    logging.info("Pickle files saved in artifacts folder.")
-
-    # Return best model and evaluation results
-    return best_model_name, evaluation_results
-
-if __name__ == "__main__":
-    main()
+# Example of saving preprocessor if needed
+joblib.dump(preprocessor, 'artifacts/preprocessor.pkl')

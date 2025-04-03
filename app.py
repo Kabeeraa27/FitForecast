@@ -1,35 +1,69 @@
-from flask import Flask, render_template, request
-from src.pipeline.predict_pipeline import predict
+from flask import Flask, request, jsonify, render_template
+import pandas as pd
+import joblib
+import os
 
 app = Flask(__name__, template_folder='template')
+
+# Load the trained model and label encoder
+model_path = 'notebook/trained_model'
+label_encoder_path = 'notebook/label_encoder'
+
+model = None
+label_encoder = None
+
+try:
+    if os.path.exists(model_path):
+        model = joblib.load(model_path)
+    else:
+        print(f"Model path {model_path} does not exist.")
+    
+    if os.path.exists(label_encoder_path):
+        label_encoder = joblib.load(label_encoder_path)
+    else:
+        print(f"Label encoder path {label_encoder_path} does not exist.")
+except Exception as e:
+    print(f"Error loading model or label encoder: {e}")
 
 @app.route('/')
 def home():
     return render_template('index.html')
 
 @app.route('/predict', methods=['POST'])
-def predict_obesity():
-    features = {
+def predict():
+    if model is None or label_encoder is None:
+        return jsonify({'error': 'Model or label encoder not found.'})
+
+    # Get form data
+    data = {
         'Gender': request.form['gender'],
-        'Age': float(request.form['age']),
+        'Age': int(request.form['age']),
         'Height': float(request.form['height']),
         'Weight': float(request.form['weight']),
         'FamOverweightHist': request.form['famOverweightHist'],
-        'FreqHighCalFood': float(request.form['freqHighCalFood']),
+        'FreqHighCalFood': request.form['freqHighCalFood'],
         'FoodBtwMeals': request.form['foodBtwMeals'],
         'Smoke': request.form['smoke'],
         'CalorieMonitor': request.form['calorieMonitor'],
         'AlcoholConsump': request.form['alcoholConsump'],
         'Transport': request.form['transport'],
-        'FreqVeg': float(request.form['freqVeg']),
-        'MainMeals': float(request.form['mainMeals']),
+        'FreqVeg': int(request.form['freqVeg']),
+        'MainMeals': int(request.form['mainMeals']),
         'WaterIntake': float(request.form['waterIntake']),
-        'FreqPhyAct': float(request.form['freqPhyAct']),
-        'TechUse': float(request.form['techUse'])
+        'FreqPhyAct': int(request.form['freqPhyAct']),
+        'TechUse': int(request.form['techUse']),
     }
 
-    prediction = predict(features)
-    return render_template('index.html', result=prediction)
+    df = pd.DataFrame([data])
 
-if __name__ == "__main__":
+    # Make prediction
+    try:
+        prediction = model.predict(df)
+        predicted_label = label_encoder.inverse_transform(prediction)[0]
+        return jsonify({'prediction': predicted_label})
+    except Exception as e:
+        print(f"Error making prediction: {e}")
+        return jsonify({'error': 'Error making prediction'})
+
+if __name__ == '__main__':
     app.run(debug=True)

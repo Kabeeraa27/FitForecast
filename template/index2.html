@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Obesity Prediction</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding-top: 50px;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            box-sizing: border-box;
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin: 5px 0 15px 0;
+            display: block;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            background-color: #007bff;
+            color: white;
+            padding: 14px 20px;
+            margin: 8px 0;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result-box {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #e2e2e2;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <form id="prediction-form" action="/predict_data" method="POST">
+            <h2>Obesity Prediction</h2>
+
+            <label for="gender">Gender:</label>
+            <select id="gender" name="Gender" required>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+            </select>
+
+            <label for="age">Age:</label>
+            <input type="number" id="age" name="Age" required>
+
+            <label for="height">Height (in meters):</label>
+            <input type="number" step="0.01" id="height" name="Height" required>
+
+            <label for="weight">Weight (in kg):</label>
+            <input type="number" step="0.1" id="weight" name="Weight" required>
+
+            <label for="famOverweightHist">Family Overweight History:</label>
+            <select id="famOverweightHist" name="FamOverweightHist" required>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+            </select>
+
+            <label for="freqHighCalFood">Frequency of High Caloric Food Consumption:</label>
+            <select id="freqHighCalFood" name="FreqHighCalFood" required>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+            </select>
+
+            <label for="foodBtwMeals">Food Consumption Between Meals:</label>
+            <select id="foodBtwMeals" name="FoodBtwMeals" required>
+                <option value="Frequently">Frequently</option>
+                <option value="Sometimes">Sometimes</option>
+                <option value="No">No</option>
+            </select>
+
+            <label for="smoke">Smoking Habit:</label>
+            <select id="smoke" name="Smoke" required>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+            </select>
+
+            <label for="calorieMonitor">Calorie Monitor:</label>
+            <select id="calorieMonitor" name="CalorieMonitor" required>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+            </select>
+
+            <label for="alcoholConsump">Alcohol Consumption:</label>
+            <select id="alcoholConsump" name="AlcoholConsump" required>
+                <option value="Frequently">Frequently</option>
+                <option value="Sometimes">Sometimes</option>
+                <option value="No">No</option>
+            </select>
+
+            <label for="transport">Mode of Transport:</label>
+            <select id="transport" name="Transport" required>
+                <option value="Public Transport">Public Transport</option>
+                <option value="Walking">Walking</option>
+                <option value="Car">Car</option>
+                <option value="Bike">Bike</option>
+                <option value="Motorbike">Motorbike</option>
+            </select>
+
+            <label for="freqVeg">Frequency of Vegetable Consumption (per week):</label>
+            <input type="number" step="0.1" id="freqVeg" name="FreqVeg" required>
+
+            <label for="mainMeals">Number of Main Meals per day:</label>
+            <input type="number" step="0.1" id="mainMeals" name="MainMeals" required>
+
+            <label for="waterIntake">Daily Water Intake (liters):</label>
+            <input type="number" step="0.1" id="waterIntake" name="WaterIntake" required>
+
+            <label for="freqPhyAct">Frequency of Physical Activity (per week):</label>
+            <input type="number" step="0.1" id="freqPhyAct" name="FreqPhyAct" required>
+
+            <label for="techUse">Technology Use (hours per day):</label>
+            <input type="number" step="0.1" id="techUse" name="TechUse" required>
+
+            <button type="submit">Predict</button>
+        </form>
+        <div id="result" class="result-box" style="display: none;"></div>
+    </div>
+
+    <script>
+        document.getElementById('prediction-form').onsubmit = async function(event) {
+            event.preventDefault();
+
+            const form = event.target;
+            const formData = new FormData(form);
+
+            const response = await fetch(form.action, {
+                method: form.method,
+                body: formData
+            });
+
+            const result = await response.json();
+            const resultBox = document.getElementById('result');
+            resultBox.style.display = 'block';
+            resultBox.innerHTML = `Prediction: ${result.prediction}`;
+        };
+    </script>
+</body>
+</html>

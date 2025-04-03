@@ -1,25 +1,45 @@
-from sklearn.preprocessing import StandardScaler, OneHotEncoder, LabelEncoder
+import pandas as pd
 from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.pipeline import Pipeline
-import joblib
 
-def preprocess_data(X):
-    numerical_features = X.select_dtypes(include=['float64', 'int64']).columns
-    categorical_features = X.select_dtypes(include=['object']).columns
+def load_data(file_path):
+    # Load the dataset
+    data = pd.read_csv(file_path)
 
-    numerical_transformer = StandardScaler()
-    categorical_transformer = OneHotEncoder(handle_unknown='ignore')
+    # Separate features and target
+    X = data.drop(['Obesity', 'BMI'], axis=1)
+    y = data['Obesity']
 
+    return X, y
+
+def preprocess_data(X, y):
+    # Identify categorical and numeric columns
+    categorical_cols = ['Gender', 'FamOverweightHist', 'FreqHighCalFood', 'FoodBtwMeals', 
+                        'Smoke', 'CalorieMonitor', 'TechUse', 'AlcoholConsump', 'Transport']
+    numeric_cols = ['Age', 'Height', 'Weight', 'FreqVeg', 'MainMeals', 'WaterIntake', 'FreqPhyAct']
+
+    # Pipeline for numeric features
+    numeric_transformer = Pipeline(steps=[
+        ('imputer', SimpleImputer(strategy='median')),
+        ('scaler', StandardScaler())
+    ])
+
+    # Pipeline for categorical features
+    categorical_transformer = Pipeline(steps=[
+        ('imputer', SimpleImputer(strategy='most_frequent')),
+        ('onehot', OneHotEncoder(handle_unknown='ignore'))
+    ])
+
+    # Combine transformers using ColumnTransformer
     preprocessor = ColumnTransformer(
         transformers=[
-            ('num', numerical_transformer, numerical_features),
-            ('cat', categorical_transformer, categorical_features)
+            ('num', numeric_transformer, numeric_cols),
+            ('cat', categorical_transformer, categorical_cols)
         ])
 
-    pipeline = Pipeline(steps=[('preprocessor', preprocessor)])
+    # Fit and transform the data
+    X_processed = preprocessor.fit_transform(X)
 
-    X_transformed = pipeline.fit_transform(X)
-
-    joblib.dump(pipeline, 'artifacts/preprocessor.pkl')
-
-    return X_transformed, pipeline
+    return preprocessor, X_processed, y

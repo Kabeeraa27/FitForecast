@@ -1,19 +1,19 @@
-# prediction_pipeline.py
-
-import pickle
-import numpy as np
 import pandas as pd
+from joblib import load
 
-def load_model_and_preprocessor():
-    with open('artifacts/classification_model.pkl', 'rb') as f:
-        model = pickle.load(f)
-    with open('artifacts/classification_preprocessor.pkl', 'rb') as f:
-        preprocessor = pickle.load(f)
-    return model, preprocessor
+class PredictPipeline:
+    def __init__(self, model_path='best_model_pipeline.joblib'):
+        self.pipeline = load(model_path)
 
-def predict(features):
-    model, preprocessor = load_model_and_preprocessor()
-    features_df = pd.DataFrame([features])
-    preprocessed_features = preprocessor.transform(features_df)
-    prediction = model.predict(preprocessed_features)
-    return prediction[0]
+    def predict(self, data):
+        # Convert data to DataFrame
+        input_data = pd.DataFrame([data])
+        
+        # Convert numerical columns to correct types if necessary
+        numerical_cols = ['Age', 'SibSp', 'Parch', 'Fare', 'Pclass']
+        for col in numerical_cols:
+            input_data[col] = pd.to_numeric(input_data[col])
+        
+        # Predict
+        prediction = self.pipeline.predict(input_data)
+        return prediction[0]
