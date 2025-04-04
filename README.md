@@ -49,8 +49,6 @@ The dataset contains demographic, lifestyle, and behavioral features to help pre
 Launch the Tkinter-based GUI:
 
 ```bash
-Copy
-Edit
 python gui_app.py
 ```
 
@@ -63,8 +61,6 @@ python gui_app.py
 
 ## 🗃️ Project Structure
 ```bash
-Copy
-Edit
 FitForecast/
 │
 ├── notebook/               # Jupyter notebooks for EDA & training
